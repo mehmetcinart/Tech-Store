@@ -10,24 +10,28 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", phone: "", address: "", city: "", zip: "", cardNumber: "", cardExpiry: "", cardCvc: "" });
+  const [error, setError]     = useState("");
+  const [form, setForm] = useState({
+    name: user?.name || "", email: user?.email || "",
+    phone: "", address: "", city: "", zip: "",
+    cardNumber: "", cardExpiry: "", cardCvc: "",
+  });
 
   if (!user) return (
     <div className="container" style={{ padding: "4rem 1rem", textAlign: "center" }}>
-      <h2>Ödeme yapmak için giriş yapmalısınız</h2>
+      <h2 style={{ color: "#111F1C" }}>Ödeme yapmak için giriş yapmalısınız</h2>
       <Link to="/login" className="btn btn-primary btn-lg" style={{ marginTop: "1.5rem" }}>Giriş Yap</Link>
     </div>
   );
 
   if (items.length === 0) return (
     <div className="container" style={{ padding: "4rem 1rem", textAlign: "center" }}>
-      <h2>Sepetiniz boş</h2>
+      <h2 style={{ color: "#111F1C" }}>Sepetiniz boş</h2>
       <Link to="/products" className="btn btn-primary btn-lg" style={{ marginTop: "1.5rem" }}>Alışverişe Başla</Link>
     </div>
   );
 
-  const shipping = totalPrice >= 200 ? 0 : 29.99;
+  const shipping   = totalPrice >= 200 ? 0 : 29.99;
   const grandTotal = totalPrice + shipping;
 
   const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -58,7 +62,7 @@ export default function CheckoutPage() {
       <form onSubmit={handleSubmit}>
         <div style={styles.layout}>
           <div>
-            {/* Teslimat Bilgileri */}
+            {/* Teslimat */}
             <div className="card" style={styles.section}>
               <h2 style={styles.sectionTitle}>📦 Teslimat Bilgileri</h2>
               <div style={styles.grid2}>
@@ -87,7 +91,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Ödeme Bilgileri */}
+            {/* Ödeme */}
             <div className="card" style={styles.section}>
               <h2 style={styles.sectionTitle}>💳 Ödeme Bilgileri</h2>
               <div className="form-group">
@@ -104,7 +108,9 @@ export default function CheckoutPage() {
                   <input className="form-input" name="cardCvc" value={form.cardCvc} onChange={handleChange} placeholder="XXX" maxLength={4} required />
                 </div>
               </div>
-              <p style={{ fontSize: ".75rem", color: "#6b7280", marginTop: ".875rem" }}>🔒 Ödeme bilgileriniz 256-bit SSL ile şifrelenmektedir. Bu bir demo sitedir, gerçek kart bilgisi girmeyin.</p>
+              <p style={{ fontSize: ".75rem", color: "#8AADA4", marginTop: ".875rem" }}>
+                🔒 Ödeme bilgileriniz 256-bit SSL ile şifrelenmektedir. Bu bir demo sitedir, gerçek kart bilgisi girmeyin.
+              </p>
             </div>
           </div>
 
@@ -114,19 +120,26 @@ export default function CheckoutPage() {
               <h2 style={styles.sectionTitle}>Sipariş Özeti</h2>
               {items.map((item) => (
                 <div key={item.id} style={styles.orderItem}>
-                  <span style={{ color: "#374151" }}>{item.name} x{item.quantity}</span>
+                  <span style={{ color: "#2C4F48" }}>{item.name} x{item.quantity}</span>
                   <span style={{ fontWeight: 600 }}>{formatPrice(item.price * item.quantity)}</span>
                 </div>
               ))}
               <div style={styles.divider} />
-              <div style={styles.orderItem}><span>Kargo</span><span style={{ color: shipping === 0 ? "#10b981" : undefined }}>{shipping === 0 ? "Ücretsiz" : formatPrice(shipping)}</span></div>
+              <div style={styles.orderItem}>
+                <span>Kargo</span>
+                <span style={{ color: shipping === 0 ? "#3EA882" : undefined }}>
+                  {shipping === 0 ? "Ücretsiz" : formatPrice(shipping)}
+                </span>
+              </div>
               <div style={styles.divider} />
               <div style={{ ...styles.orderItem, fontWeight: 700, fontSize: "1.1rem" }}>
                 <span>Toplam</span>
-                <span style={{ color: "#2563eb" }}>{formatPrice(grandTotal)}</span>
+                <span style={{ color: "#2C7A5E" }}>{formatPrice(grandTotal)}</span>
               </div>
               {error && <div className="alert alert-error" style={{ marginTop: "1rem" }}>{error}</div>}
-              <button className="btn btn-primary btn-lg" type="submit" style={{ width: "100%", justifyContent: "center", marginTop: "1.25rem" }} disabled={loading}>
+              <button className="btn btn-primary btn-lg" type="submit"
+                style={{ width: "100%", justifyContent: "center", marginTop: "1.25rem" }}
+                disabled={loading}>
                 {loading ? "İşleniyor..." : "✓ Siparişi Tamamla"}
               </button>
             </div>
@@ -138,11 +151,11 @@ export default function CheckoutPage() {
 }
 
 const styles = {
-  pageTitle: { fontSize: "1.375rem", fontWeight: 700, marginBottom: "1.5rem" },
-  layout: { display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "flex-start" },
-  section: { padding: "1.5rem", marginBottom: "1rem" },
-  sectionTitle: { fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem" },
-  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".875rem" },
-  orderItem: { display: "flex", justifyContent: "space-between", fontSize: ".875rem", marginBottom: ".625rem" },
-  divider: { height: "1px", background: "#e5e7eb", margin: ".75rem 0" },
+  pageTitle:    { fontSize: "1.375rem", fontWeight: 700, marginBottom: "1.5rem", color: "#111F1C" },
+  layout:       { display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "flex-start" },
+  section:      { padding: "1.5rem", marginBottom: "1rem" },
+  sectionTitle: { fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem", color: "#111F1C" },
+  grid2:        { display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".875rem" },
+  orderItem:    { display: "flex", justifyContent: "space-between", fontSize: ".875rem", marginBottom: ".625rem", color: "#2C4F48" },
+  divider:      { height: "1px", background: "#D9E4E0", margin: ".75rem 0" },
 };

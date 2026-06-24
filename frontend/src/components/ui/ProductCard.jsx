@@ -49,22 +49,29 @@ export default function ProductCard({ product }) {
 
 const styles = {
   card: { transition: "transform .2s, box-shadow .2s", cursor: "pointer" },
-  imageWrapper: { position: "relative", background: "#f9fafb", aspectRatio: "1" },
+  imageWrapper: { position: "relative", background: "#F7F9F8", aspectRatio: "1" },
   image: { width: "100%", height: "100%", objectFit: "contain", padding: "1rem" },
   discountBadge: {
     position: "absolute", top: ".625rem", left: ".625rem",
-    background: "#ef4444", color: "#fff",
+    background: "#e05252", color: "#fff",
     fontSize: ".75rem", fontWeight: 700,
     padding: ".2rem .5rem", borderRadius: "6px",
   },
   body: { padding: ".875rem 1rem .5rem" },
-  brand: { fontSize: ".75rem", color: "#6b7280", fontWeight: 500, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: ".25rem" },
-  name: { fontSize: ".9rem", fontWeight: 600, color: "#111827", lineHeight: 1.4, marginBottom: ".5rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" },
+  brand: {
+    fontSize: ".75rem", color: "#5E8A80", fontWeight: 600,
+    textTransform: "uppercase", letterSpacing: ".05em", marginBottom: ".25rem",
+  },
+  name: {
+    fontSize: ".9rem", fontWeight: 600, color: "#111F1C", lineHeight: 1.4,
+    marginBottom: ".5rem", display: "-webkit-box",
+    WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+  },
   rating: { display: "flex", alignItems: "center", gap: ".375rem", marginBottom: ".5rem" },
-  ratingText: { fontSize: ".75rem", color: "#6b7280" },
+  ratingText: { fontSize: ".75rem", color: "#8AADA4" },
   priceRow: { display: "flex", alignItems: "center", gap: ".5rem", flexWrap: "wrap" },
-  price: { fontSize: "1.1rem", fontWeight: 700, color: "#2563eb" },
-  originalPrice: { fontSize: ".8rem", color: "#9ca3af", textDecoration: "line-through" },
-  lowStock: { fontSize: ".75rem", color: "#f59e0b", fontWeight: 600, marginTop: ".25rem" },
-  outOfStock: { fontSize: ".75rem", color: "#ef4444", fontWeight: 600, marginTop: ".25rem" },
+  price: { fontSize: "1.1rem", fontWeight: 700, color: "#2C7A5E" },
+  originalPrice: { fontSize: ".8rem", color: "#B8CFC8", textDecoration: "line-through" },
+  lowStock: { fontSize: ".75rem", color: "#d4a017", fontWeight: 600, marginTop: ".25rem" },
+  outOfStock: { fontSize: ".75rem", color: "#e05252", fontWeight: 600, marginTop: ".25rem" },
 };

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 export default function RegisterPage() {
   const { register, loading } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+  const [form, setForm]   = useState({ name: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -32,22 +32,30 @@ export default function RegisterPage() {
 
           <div className="form-group">
             <label className="form-label">Ad Soyad</label>
-            <input className="form-input" type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Adınız Soyadınız" required autoFocus />
+            <input className="form-input" type="text" value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Adınız Soyadınız" required autoFocus />
           </div>
 
           <div className="form-group">
             <label className="form-label">E-posta Adresi</label>
-            <input className="form-input" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="ornek@email.com" required />
+            <input className="form-input" type="email" value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              placeholder="ornek@email.com" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">Şifre</label>
-            <input className="form-input" type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder="En az 6 karakter" required />
+            <input className="form-input" type="password" value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              placeholder="En az 6 karakter" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">Şifre Tekrar</label>
-            <input className="form-input" type="password" value={form.confirm} onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))} placeholder="Şifrenizi tekrar girin" required />
+            <input className="form-input" type="password" value={form.confirm}
+              onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))}
+              placeholder="Şifrenizi tekrar girin" required />
           </div>
 
           <button className="btn btn-primary btn-lg" type="submit" style={{ width: "100%" }} disabled={loading}>
@@ -56,7 +64,8 @@ export default function RegisterPage() {
         </form>
 
         <p style={styles.footer}>
-          Zaten hesabınız var mı? <Link to="/login" style={{ color: "#2563eb", fontWeight: 600 }}>Giriş Yap</Link>
+          Zaten hesabınız var mı?{" "}
+          <Link to="/login" style={{ color: "#2C7A5E", fontWeight: 600 }}>Giriş Yap</Link>
         </p>
       </div>
     </div>
@@ -65,11 +74,11 @@ export default function RegisterPage() {
 
 const styles = {
   wrapper: { minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 1rem" },
-  card: { background: "#fff", borderRadius: "16px", boxShadow: "0 4px 24px rgba(0,0,0,.1)", padding: "2.5rem", width: "100%", maxWidth: "420px" },
-  header: { textAlign: "center", marginBottom: "2rem" },
-  logo: { fontSize: "2.5rem", marginBottom: ".5rem" },
-  title: { fontSize: "1.5rem", fontWeight: 800, color: "#111827" },
-  sub: { color: "#6b7280", marginTop: ".375rem", fontSize: ".9rem" },
-  form: { display: "flex", flexDirection: "column", gap: "1rem" },
-  footer: { textAlign: "center", marginTop: "1.25rem", fontSize: ".875rem", color: "#6b7280" },
+  card:    { background: "#fff", borderRadius: "16px", boxShadow: "0 4px 24px rgba(44,122,94,.12)", padding: "2.5rem", width: "100%", maxWidth: "420px" },
+  header:  { textAlign: "center", marginBottom: "2rem" },
+  logo:    { fontSize: "2.5rem", marginBottom: ".5rem" },
+  title:   { fontSize: "1.5rem", fontWeight: 800, color: "#111F1C" },
+  sub:     { color: "#8AADA4", marginTop: ".375rem", fontSize: ".9rem" },
+  form:    { display: "flex", flexDirection: "column", gap: "1rem" },
+  footer:  { textAlign: "center", marginTop: "1.25rem", fontSize: ".875rem", color: "#8AADA4" },
 };

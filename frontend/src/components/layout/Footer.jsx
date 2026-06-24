@@ -42,15 +42,15 @@ export default function Footer() {
 }
 
 const styles = {
-  footer: { background: "#1f2937", color: "#d1d5db", marginTop: "3rem", paddingTop: "3rem" },
+  footer: { background: "#1C3430", color: "#B8CFC8", marginTop: "3rem", paddingTop: "3rem" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "2rem", paddingBottom: "2rem" },
-  brand: { fontSize: "1.375rem", color: "#60a5fa", marginBottom: ".75rem" },
-  desc: { fontSize: ".875rem", lineHeight: 1.7, color: "#9ca3af" },
-  heading: { color: "#f9fafb", marginBottom: ".75rem", fontWeight: 600 },
-  link: { display: "block", fontSize: ".875rem", color: "#9ca3af", marginBottom: ".375rem", transition: "color .15s" },
+  brand: { fontSize: "1.375rem", color: "#6BC9A2", marginBottom: ".75rem" },
+  desc: { fontSize: ".875rem", lineHeight: 1.7, color: "#8AADA4" },
+  heading: { color: "#E8F5F0", marginBottom: ".75rem", fontWeight: 600 },
+  link: { display: "block", fontSize: ".875rem", color: "#8AADA4", marginBottom: ".375rem", transition: "color .15s" },
   bottom: {
-    borderTop: "1px solid #374151", padding: "1.25rem 0",
+    borderTop: "1px solid #2C4F48", padding: "1.25rem 0",
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    fontSize: ".8rem", color: "#6b7280", flexWrap: "wrap", gap: ".5rem",
+    fontSize: ".8rem", color: "#5E8A80", flexWrap: "wrap", gap: ".5rem",
   },
 };

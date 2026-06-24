@@ -55,9 +55,18 @@ export default function Navbar() {
               </button>
               {menuOpen && (
                 <div style={styles.dropdown}>
-                  {isAdmin && <Link to="/admin" style={styles.dropdownItem} onClick={() => setMenuOpen(false)}>⚙️ Admin Panel</Link>}
-                  <Link to="/orders" style={styles.dropdownItem} onClick={() => setMenuOpen(false)}>📦 Siparişlerim</Link>
-                  <button style={{ ...styles.dropdownItem, color: "#ef4444", border: "none", background: "none", width: "100%", textAlign: "left" }} onClick={handleLogout}>
+                  {isAdmin && (
+                    <Link to="/admin" style={styles.dropdownItem} onClick={() => setMenuOpen(false)}>
+                      ⚙️ Admin Panel
+                    </Link>
+                  )}
+                  <Link to="/orders" style={styles.dropdownItem} onClick={() => setMenuOpen(false)}>
+                    📦 Siparişlerim
+                  </Link>
+                  <button
+                    style={{ ...styles.dropdownItem, color: "#e05252", border: "none", background: "none", width: "100%", textAlign: "left" }}
+                    onClick={handleLogout}
+                  >
                     🚪 Çıkış Yap
                   </button>
                 </div>
@@ -75,7 +84,9 @@ export default function Navbar() {
       <div style={styles.categories}>
         <div className="container" style={styles.categoriesInner}>
           {["Telefon", "Laptop", "Kulaklık", "Tablet", "Televizyon", "Oyun Konsolu"].map((cat) => (
-            <Link key={cat} to={`/products?category=${cat}`} style={styles.catLink}>{cat}</Link>
+            <Link key={cat} to={`/products?category=${cat}`} style={styles.catLink}>
+              {cat}
+            </Link>
           ))}
         </div>
       </div>
@@ -84,9 +95,18 @@ export default function Navbar() {
 }
 
 const styles = {
-  nav: { background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,.08)", position: "sticky", top: 0, zIndex: 100 },
+  nav: {
+    background: "#fff",
+    boxShadow: "0 2px 8px rgba(44,122,94,.10)",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+  },
   inner: { display: "flex", alignItems: "center", gap: "1rem", padding: ".875rem 1rem" },
-  logo: { display: "flex", alignItems: "center", gap: ".5rem", fontSize: "1.375rem", color: "#2563eb", whiteSpace: "nowrap" },
+  logo: {
+    display: "flex", alignItems: "center", gap: ".5rem",
+    fontSize: "1.375rem", color: "#2C7A5E", whiteSpace: "nowrap",
+  },
   logoIcon: { fontSize: "1.5rem" },
   searchForm: { display: "flex", flex: 1, maxWidth: "540px" },
   searchInput: { flex: 1, borderRadius: "8px 0 0 8px", borderRight: "none" },
@@ -94,20 +114,31 @@ const styles = {
   cartBtn: { position: "relative", fontSize: "1.5rem", padding: ".25rem" },
   cartBadge: {
     position: "absolute", top: "-6px", right: "-6px",
-    background: "#ef4444", color: "#fff",
+    background: "#e05252", color: "#fff",
     fontSize: ".65rem", fontWeight: 700,
     width: "18px", height: "18px",
     borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
   },
   userMenu: { position: "relative" },
-  userBtn: { background: "#eff6ff", border: "none", borderRadius: "8px", padding: ".5rem .875rem", fontWeight: 600, fontSize: ".875rem", color: "#2563eb" },
+  userBtn: {
+    background: "#E8F5F0", border: "none", borderRadius: "8px",
+    padding: ".5rem .875rem", fontWeight: 600, fontSize: ".875rem", color: "#2C7A5E",
+  },
   dropdown: {
     position: "absolute", right: 0, top: "calc(100% + .5rem)",
-    background: "#fff", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.12)",
+    background: "#fff", borderRadius: "10px",
+    boxShadow: "0 8px 24px rgba(44,122,94,.15)",
     minWidth: "180px", overflow: "hidden", zIndex: 200,
   },
-  dropdownItem: { display: "block", padding: ".75rem 1rem", fontSize: ".875rem", fontWeight: 500, color: "#374151", transition: "background .1s" },
-  categories: { borderTop: "1px solid #f3f4f6", background: "#fff" },
+  dropdownItem: {
+    display: "block", padding: ".75rem 1rem",
+    fontSize: ".875rem", fontWeight: 500, color: "#2C4F48",
+    transition: "background .1s",
+  },
+  categories: { borderTop: "1px solid #E8F5F0", background: "#fff" },
   categoriesInner: { display: "flex", gap: "0", overflowX: "auto" },
-  catLink: { padding: ".5rem 1rem", fontSize: ".8rem", fontWeight: 500, color: "#6b7280", whiteSpace: "nowrap", transition: "color .15s" },
+  catLink: {
+    padding: ".5rem 1rem", fontSize: ".8rem", fontWeight: 500,
+    color: "#5E8A80", whiteSpace: "nowrap", transition: "color .15s",
+  },
 };
