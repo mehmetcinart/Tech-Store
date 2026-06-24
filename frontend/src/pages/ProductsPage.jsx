@@ -84,10 +84,12 @@ export default function ProductsPage() {
             </h1>
             <p style={styles.count}>{total} ürün bulundu</p>
           </div>
-          <select className="form-input" style={{ width: "220px" }} value={sort}
-            onChange={(e) => setFilter("sort", e.target.value)}>
-            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <div style={styles.selectWrapper}>
+            <select style={styles.select} value={sort} onChange={(e) => setFilter("sort", e.target.value)}>
+              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <span style={styles.selectArrow}>▾</span>
+          </div>
         </div>
 
         {loading ? (
@@ -119,5 +121,35 @@ const styles = {
   topBar:      { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "1.25rem", flexWrap: "wrap", gap: ".75rem" },
   pageTitle:   { fontSize: "1.25rem", fontWeight: 700, color: "#111F1C" },
   count:       { fontSize: ".875rem", color: "#8AADA4", marginTop: ".25rem" },
-  empty:       { textAlign: "center", padding: "4rem 0", color: "#2C4F48" },
+  empty:        { textAlign: "center", padding: "4rem 0", color: "#2C4F48" },
+  selectWrapper: {
+    position: "relative",
+    display: "inline-flex",
+    alignItems: "center",
+  },
+  select: {
+    appearance: "none",
+    WebkitAppearance: "none",
+    padding: ".55rem 2.5rem .55rem 1rem",
+    border: "1.5px solid #D9E4E0",
+    borderRadius: "10px",
+    fontSize: ".875rem",
+    fontFamily: "inherit",
+    fontWeight: 500,
+    color: "#2C4F48",
+    background: "#fff",
+    cursor: "pointer",
+    outline: "none",
+    minWidth: "220px",
+    boxShadow: "0 1px 4px rgba(44,122,94,.08)",
+    transition: "border-color .15s, box-shadow .15s",
+  },
+  selectArrow: {
+    position: "absolute",
+    right: ".875rem",
+    color: "#3EA882",
+    fontSize: "1rem",
+    pointerEvents: "none",
+    fontWeight: 700,
+  },
 };

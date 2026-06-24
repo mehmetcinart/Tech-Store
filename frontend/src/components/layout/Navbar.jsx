@@ -1,14 +1,26 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
+
+const CATEGORIES = [
+  { name: "Telefon",      icon: "📱" },
+  { name: "Laptop",       icon: "💻" },
+  { name: "Kulaklık",     icon: "🎧" },
+  { name: "Tablet",       icon: "📟" },
+  { name: "Televizyon",   icon: "📺" },
+  { name: "Oyun Konsolu", icon: "🎮" },
+];
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const activeCategory = searchParams.get("category") || "";
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hoveredCat, setHoveredCat] = useState(null);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -83,11 +95,37 @@ export default function Navbar() {
 
       <div style={styles.categories}>
         <div className="container" style={styles.categoriesInner}>
-          {["Telefon", "Laptop", "Kulaklık", "Tablet", "Televizyon", "Oyun Konsolu"].map((cat) => (
-            <Link key={cat} to={`/products?category=${cat}`} style={styles.catLink}>
-              {cat}
-            </Link>
-          ))}
+          {CATEGORIES.map((cat) => {
+            const isActive  = activeCategory === cat.name;
+            const isHovered = hoveredCat === cat.name;
+            return (
+              <Link
+                key={cat.name}
+                to={`/products?category=${cat.name}`}
+                style={{
+                  ...styles.catLink,
+                  color: isActive ? "#2C7A5E" : isHovered ? "#3EA882" : "#5E8A80",
+                  fontWeight: isActive ? 700 : 500,
+                }}
+                onMouseEnter={() => setHoveredCat(cat.name)}
+                onMouseLeave={() => setHoveredCat(null)}
+              >
+                <span style={{
+                  ...styles.catIcon,
+                  transform: isHovered ? "scale(1.3) translateY(-2px)" : "scale(1)",
+                  opacity: isHovered || isActive ? 1 : 0.6,
+                }}>
+                  {cat.icon}
+                </span>
+                <span>{cat.name}</span>
+                <span style={{
+                  ...styles.catUnderline,
+                  width: isActive || isHovered ? "100%" : "0%",
+                  background: isActive ? "#2C7A5E" : "#6BC9A2",
+                }} />
+              </Link>
+            );
+          })}
         </div>
       </div>
     </nav>
@@ -136,9 +174,29 @@ const styles = {
     transition: "background .1s",
   },
   categories: { borderTop: "1px solid #E8F5F0", background: "#fff" },
-  categoriesInner: { display: "flex", gap: "0", overflowX: "auto" },
+  categoriesInner: { display: "flex", overflowX: "auto" },
   catLink: {
-    padding: ".5rem 1rem", fontSize: ".8rem", fontWeight: 500,
-    color: "#5E8A80", whiteSpace: "nowrap", transition: "color .15s",
+    position: "relative",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: ".35rem",
+    padding: ".625rem 1rem",
+    fontSize: ".825rem",
+    whiteSpace: "nowrap",
+    transition: "color .2s",
+    overflow: "hidden",
+  },
+  catIcon: {
+    fontSize: ".9rem",
+    display: "inline-block",
+    transition: "transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s",
+  },
+  catUnderline: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    height: "2.5px",
+    borderRadius: "2px 2px 0 0",
+    transition: "width .25s cubic-bezier(.4,0,.2,1)",
   },
 };
