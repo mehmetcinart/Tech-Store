@@ -29,6 +29,12 @@
   --radius-lg: 12px;
 }
 
+@keyframes specSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+.spec-row-enter { animation: specSlideIn .22s cubic-bezier(.34,1.56,.64,1) both; }
+
 body {
   font-family: 'Inter', sans-serif;
   background: var(--bg);

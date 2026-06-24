@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { updateProfile } from "firebase/auth";
+import { auth } from "../../firebase";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 
@@ -18,13 +20,30 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activeCategory = searchParams.get("category") || "";
-  const [search, setSearch] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [hoveredCat, setHoveredCat] = useState(null);
+  const [search, setSearch]           = useState("");
+  const [menuOpen, setMenuOpen]       = useState(false);
+  const [hoveredCat, setHoveredCat]   = useState(null);
+  const [showRename, setShowRename]   = useState(false);
+  const [newName, setNewName]         = useState("");
+  const [renameErr, setRenameErr]     = useState("");
+  const [renameBusy, setRenameBusy]   = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (search.trim()) navigate(`/products?search=${encodeURIComponent(search.trim())}`);
+  };
+
+  const handleRename = async (e) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setRenameBusy(true); setRenameErr("");
+    try {
+      await updateProfile(auth.currentUser, { displayName: newName.trim() });
+      setShowRename(false); setNewName("");
+      window.location.reload();
+    } catch {
+      setRenameErr("İsim güncellenemedi, tekrar dene.");
+    } finally { setRenameBusy(false); }
   };
 
   const handleLogout = () => {
@@ -62,11 +81,53 @@ export default function Navbar() {
 
           {user ? (
             <div style={styles.userMenu}>
-              <button style={styles.userBtn} onClick={() => setMenuOpen(!menuOpen)}>
-                👤 {user.name.split(" ")[0]}
+              <button style={styles.userBtn} onClick={() => { setMenuOpen(!menuOpen); setShowRename(false); }}>
+                {user.avatar
+                  ? <img src={user.avatar} alt={user.name} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", border: "2px solid #A8DCC6" }} />
+                  : <span style={styles.userAvatarPlaceholder}>{(user.name[0] || "?").toUpperCase()}</span>}
+                <span style={styles.userName}>{user.name.split(" ")[0]}</span>
+                <span style={{ fontSize: ".65rem", color: "#8AADA4", marginLeft: "2px" }}>▾</span>
               </button>
               {menuOpen && (
                 <div style={styles.dropdown}>
+                  <div style={styles.dropdownHeader}>
+                    {user.avatar
+                      ? <img src={user.avatar} alt={user.name} style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
+                      : <span style={{ ...styles.userAvatarPlaceholder, width: "40px", height: "40px", fontSize: "1.1rem" }}>{(user.name[0] || "?").toUpperCase()}</span>}
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: ".875rem", color: "#111F1C" }}>{user.name}</div>
+                      <div style={{ fontSize: ".75rem", color: "#8AADA4" }}>{user.email}</div>
+                    </div>
+                  </div>
+                  <div style={styles.dropdownDivider} />
+
+                  {/* İsim değiştir */}
+                  {showRename ? (
+                    <form onSubmit={handleRename} style={{ padding: ".75rem 1rem" }}>
+                      <input
+                        autoFocus
+                        className="form-input"
+                        style={{ fontSize: ".8rem", padding: ".4rem .6rem", marginBottom: ".5rem" }}
+                        placeholder="Yeni isminiz"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                      />
+                      {renameErr && <div style={{ fontSize: ".75rem", color: "#e05252", marginBottom: ".4rem" }}>{renameErr}</div>}
+                      <div style={{ display: "flex", gap: ".4rem" }}>
+                        <button className="btn btn-primary btn-sm" type="submit" disabled={renameBusy} style={{ flex: 1, fontSize: ".78rem", padding: ".35rem .5rem" }}>
+                          {renameBusy ? "..." : "Kaydet"}
+                        </button>
+                        <button type="button" className="btn btn-outline btn-sm" onClick={() => { setShowRename(false); setRenameErr(""); setNewName(""); }} style={{ fontSize: ".78rem", padding: ".35rem .5rem" }}>
+                          İptal
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button style={styles.dropdownItem} onClick={() => setShowRename(true)}>
+                      ✏️ İsmi Değiştir
+                    </button>
+                  )}
+
                   {isAdmin && (
                     <Link to="/admin" style={styles.dropdownItem} onClick={() => setMenuOpen(false)}>
                       ⚙️ Admin Panel
@@ -75,6 +136,7 @@ export default function Navbar() {
                   <Link to="/orders" style={styles.dropdownItem} onClick={() => setMenuOpen(false)}>
                     📦 Siparişlerim
                   </Link>
+                  <div style={styles.dropdownDivider} />
                   <button
                     style={{ ...styles.dropdownItem, color: "#e05252", border: "none", background: "none", width: "100%", textAlign: "left" }}
                     onClick={handleLogout}
@@ -159,19 +221,34 @@ const styles = {
   },
   userMenu: { position: "relative" },
   userBtn: {
-    background: "#E8F5F0", border: "none", borderRadius: "8px",
-    padding: ".5rem .875rem", fontWeight: 600, fontSize: ".875rem", color: "#2C7A5E",
+    display: "flex", alignItems: "center", gap: ".5rem",
+    background: "#E8F5F0", border: "none", borderRadius: "50px",
+    padding: ".35rem .75rem .35rem .35rem",
+    fontWeight: 600, fontSize: ".875rem", color: "#2C7A5E", cursor: "pointer",
+    transition: "background .15s",
   },
+  userAvatarPlaceholder: {
+    width: "32px", height: "32px", borderRadius: "50%",
+    background: "#2C7A5E", color: "#fff", fontWeight: 700,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: ".875rem", flexShrink: 0,
+  },
+  userName: { maxWidth: "90px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   dropdown: {
     position: "absolute", right: 0, top: "calc(100% + .5rem)",
-    background: "#fff", borderRadius: "10px",
-    boxShadow: "0 8px 24px rgba(44,122,94,.15)",
-    minWidth: "180px", overflow: "hidden", zIndex: 200,
+    background: "#fff", borderRadius: "14px",
+    boxShadow: "0 8px 32px rgba(44,122,94,.18)",
+    minWidth: "220px", overflow: "hidden", zIndex: 200,
   },
+  dropdownHeader: {
+    display: "flex", alignItems: "center", gap: ".75rem",
+    padding: "1rem",
+  },
+  dropdownDivider: { height: "1px", background: "#E8F5F0", margin: "0" },
   dropdownItem: {
     display: "block", padding: ".75rem 1rem",
     fontSize: ".875rem", fontWeight: 500, color: "#2C4F48",
-    transition: "background .1s",
+    transition: "background .1s", cursor: "pointer", border: "none", background: "none", width: "100%", textAlign: "left",
   },
   categories: { borderTop: "1px solid #E8F5F0", background: "#fff" },
   categoriesInner: { display: "flex", overflowX: "auto" },

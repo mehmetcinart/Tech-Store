@@ -1,16 +1,25 @@
-import jwt from "jsonwebtoken";
+import { users } from "../data/users.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "techstore_secret_key_2024";
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
+  .split(",").map((e) => e.trim()).filter(Boolean);
+
+// Decode Firebase ID token payload without signature verification (demo mode)
+function decodeFirebaseToken(token) {
+  const [, payloadB64] = token.split(".");
+  if (!payloadB64) throw new Error("invalid token");
+  const json = Buffer.from(payloadB64, "base64url").toString("utf8");
+  return JSON.parse(json);
+}
 
 export const protect = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Yetkilendirme token'ı bulunamadı" });
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Yetkilendirme gerekli" });
   }
-
   try {
     const token = authHeader.split(" ")[1];
-    req.user = jwt.verify(token, JWT_SECRET);
+    const payload = decodeFirebaseToken(token);
+    req.user = { uid: payload.sub || payload.user_id, email: payload.email };
     next();
   } catch {
     res.status(401).json({ message: "Geçersiz token" });
@@ -18,11 +27,10 @@ export const protect = (req, res, next) => {
 };
 
 export const adminOnly = (req, res, next) => {
-  if (req.user?.role !== "admin") {
-    return res.status(403).json({ message: "Bu işlem için admin yetkisi gerekli" });
+  const { uid, email } = req.user;
+  const stored = users.get(uid);
+  if (!ADMIN_EMAILS.includes(email) && stored?.role !== "admin") {
+    return res.status(403).json({ message: "Admin yetkisi gerekli" });
   }
   next();
 };
-
-export const generateToken = (user) =>
-  jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../utils/api";
 import ProductCard from "../components/ui/ProductCard";
+import { useProductSync } from "../hooks/useProductSync";
 
 const CATEGORIES   = ["Telefon", "Laptop", "Kulaklık", "Tablet", "Televizyon", "Oyun Konsolu"];
 const BRANDS       = ["Apple", "Samsung", "Sony", "ASUS"];
@@ -22,6 +23,7 @@ export default function ProductsPage() {
   const category = searchParams.get("category") || "";
   const brand    = searchParams.get("brand")    || "";
   const sort     = searchParams.get("sort")     || "";
+  const syncVersion = useProductSync();
 
   useEffect(() => {
     setLoading(true);
@@ -34,7 +36,7 @@ export default function ProductsPage() {
     api.get(`/products?${params}`)
       .then(({ data }) => { setProducts(data.products); setTotal(data.total); })
       .finally(() => setLoading(false));
-  }, [search, category, brand, sort]);
+  }, [search, category, brand, sort, syncVersion]);
 
   const setFilter = (key, value) => {
     const next = new URLSearchParams(searchParams);

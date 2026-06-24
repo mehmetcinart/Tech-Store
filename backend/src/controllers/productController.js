@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { products } from "../data/products.js";
+import { broadcast } from "../sse.js";
 
 export const getProducts = (req, res) => {
   const { search, category, brand, minPrice, maxPrice, sort } = req.query;
@@ -35,11 +36,10 @@ export const getProductById = (req, res) => {
 };
 
 export const createProduct = (req, res) => {
-  const { name, category, brand, price, originalPrice, stock, description, specs, image, imageData, colors, brandLogo } = req.body;
+  const { name, category, brand, model, price, originalPrice, stock, description, specs, image, imageData, colors, colorVariants, productVariants, brandLogo } = req.body;
   if (!name || !stock) {
     return res.status(400).json({ message: "İsim ve stok zorunludur" });
   }
-  // imageData: [{ url, colors[] }] — her görsele ait renkler
   const parsedImageData = Array.isArray(imageData) ? imageData : [];
   const mainImage = image || parsedImageData[0]?.url || "https://via.placeholder.com/400x400?text=No+Image";
 
@@ -48,6 +48,7 @@ export const createProduct = (req, res) => {
     name,
     category: category || "Diğer",
     brand: brand || "",
+    model: model || "",
     brandLogo: brandLogo || "",
     price: Number(price) || 0,
     originalPrice: Number(originalPrice) || Number(price) || 0,
@@ -58,11 +59,14 @@ export const createProduct = (req, res) => {
     image: mainImage,
     imageData: parsedImageData,
     colors: Array.isArray(colors) ? colors : [],
+    colorVariants: Array.isArray(colorVariants) ? colorVariants : [],
+    productVariants: Array.isArray(productVariants) ? productVariants : [],
     description: description || "",
     specs: specs || {},
     featured: false,
   };
   products.push(newProduct);
+  broadcast("product-update", { action: "create", id: newProduct.id });
   res.status(201).json(newProduct);
 };
 
@@ -70,6 +74,7 @@ export const updateProduct = (req, res) => {
   const idx = products.findIndex((p) => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ message: "Ürün bulunamadı" });
   products[idx] = { ...products[idx], ...req.body, id: products[idx].id };
+  broadcast("product-update", { action: "update", id: req.params.id });
   res.json(products[idx]);
 };
 
@@ -77,5 +82,6 @@ export const deleteProduct = (req, res) => {
   const idx = products.findIndex((p) => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ message: "Ürün bulunamadı" });
   products.splice(idx, 1);
+  broadcast("product-update", { action: "delete", id: req.params.id });
   res.json({ message: "Ürün silindi" });
 };

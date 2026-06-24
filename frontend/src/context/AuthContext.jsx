@@ -1,56 +1,60 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import api from "../utils/api";
+import { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "../firebase";
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [loading, setLoading] = useState(false);
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "")
+  .split(",").map((e) => e.trim()).filter(Boolean);
 
-  const login = async (email, password) => {
-    setLoading(true);
-    try {
-      const { data } = await api.post("/auth/login", { email, password });
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setUser(data.user);
-      return { success: true };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || "Giriş başarısız" };
-    } finally {
+export function AuthProvider({ children }) {
+  const [user, setUser]       = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        // Register/upsert user in backend
+        try {
+          const res = await fetch("/api/users/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uid: fbUser.uid, email: fbUser.email, name: fbUser.displayName, photoURL: fbUser.photoURL }),
+          });
+          const data = await res.json();
+          const backendRole = data.role;
+          setUser({
+            id:     fbUser.uid,
+            name:   fbUser.displayName || fbUser.email?.split("@")[0] || "Kullanıcı",
+            email:  fbUser.email,
+            avatar: fbUser.photoURL,
+            role:   backendRole || (ADMIN_EMAILS.includes(fbUser.email) ? "admin" : "user"),
+          });
+        } catch {
+          setUser({
+            id:     fbUser.uid,
+            name:   fbUser.displayName || fbUser.email?.split("@")[0] || "Kullanıcı",
+            email:  fbUser.email,
+            avatar: fbUser.photoURL,
+            role:   ADMIN_EMAILS.includes(fbUser.email) ? "admin" : "user",
+          });
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-    }
-  };
+    });
+  }, []);
 
-  const register = async (name, email, password) => {
-    setLoading(true);
-    try {
-      const { data } = await api.post("/auth/register", { name, email, password });
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setUser(data.user);
-      return { success: true };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || "Kayıt başarısız" };
-    } finally {
-      setLoading(false);
-    }
-  };
+  const logout = () => signOut(auth);
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-  };
+  const isAdmin = !!user && (user.role === "admin" || ADMIN_EMAILS.includes(user.email));
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin: user?.role === "admin" }}>
-      {children}
+    <AuthContext.Provider value={{ user, loading, logout, isAdmin }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
-};
+}
 
 export const useAuth = () => useContext(AuthContext);

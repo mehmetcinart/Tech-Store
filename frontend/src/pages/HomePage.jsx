@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../utils/api";
 import ProductCard from "../components/ui/ProductCard";
+import { useProductSync } from "../hooks/useProductSync";
 
 export default function HomePage() {
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
+  const syncVersion = useProductSync();
 
   useEffect(() => {
     api.get("/products/featured")
       .then(({ data }) => setFeatured(data))
       .finally(() => setLoading(false));
-  }, []);
+  }, [syncVersion]);
 
   return (
     <div>

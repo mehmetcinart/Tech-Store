@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -13,11 +14,24 @@ import RegisterPage from "./pages/RegisterPage";
 import OrdersPage from "./pages/OrdersPage";
 import AdminPage from "./pages/admin/AdminPage";
 
+function SseListener() {
+  useEffect(() => {
+    const es = new EventSource("/api/events");
+    es.addEventListener("product-update", () => {
+      window.dispatchEvent(new CustomEvent("product-sync"));
+    });
+    es.onerror = () => es.close();
+    return () => es.close();
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
+          <SseListener />
           <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
             <Navbar />
             <main style={{ flex: 1 }}>
