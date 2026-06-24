@@ -35,23 +35,29 @@ export const getProductById = (req, res) => {
 };
 
 export const createProduct = (req, res) => {
-  const { name, category, brand, price, originalPrice, stock, description, specs, image } = req.body;
-  if (!name || !price || !stock) {
-    return res.status(400).json({ message: "İsim, fiyat ve stok zorunludur" });
+  const { name, category, brand, price, originalPrice, stock, description, specs, image, imageData, colors, brandLogo } = req.body;
+  if (!name || !stock) {
+    return res.status(400).json({ message: "İsim ve stok zorunludur" });
   }
+  // imageData: [{ url, colors[] }] — her görsele ait renkler
+  const parsedImageData = Array.isArray(imageData) ? imageData : [];
+  const mainImage = image || parsedImageData[0]?.url || "https://via.placeholder.com/400x400?text=No+Image";
+
   const newProduct = {
     id: uuidv4(),
     name,
     category: category || "Diğer",
     brand: brand || "",
-    price: Number(price),
-    originalPrice: Number(originalPrice) || Number(price),
-    discount: originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0,
+    brandLogo: brandLogo || "",
+    price: Number(price) || 0,
+    originalPrice: Number(originalPrice) || Number(price) || 0,
+    discount: 0,
     stock: Number(stock),
     rating: 0,
     reviewCount: 0,
-    image: image || "https://via.placeholder.com/400x400?text=No+Image",
-    images: [],
+    image: mainImage,
+    imageData: parsedImageData,
+    colors: Array.isArray(colors) ? colors : [],
     description: description || "",
     specs: specs || {},
     featured: false,

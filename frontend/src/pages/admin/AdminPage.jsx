@@ -27,7 +27,8 @@ const DEFAULT_BRANDS = [
   { name: "ASUS",    logo: "" },
 ];
 
-const EMPTY_FORM = { name: "", category: "", brand: "", stock: "", description: "", image: "", images: [], colors: [] };
+// imageData: [{ url, colors }] — her görsele ait renkler ayrı tutulur
+const EMPTY_FORM = { name: "", category: "", brand: "", stock: "", description: "", image: "", imageData: [], colors: [] };
 const EMPTY_NEW_BRAND = { name: "", logo: "", logoPreview: "" };
 
 function readFileAsDataURL(file) {
@@ -89,8 +90,8 @@ export default function AdminPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [formError, setFormError]   = useState("");
-  const [imagePreviews, setImagePreviews] = useState([]); // [{ url, dominant }]
-  const [detectedColors, setDetectedColors] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]); // [{ url, colors[] }]
+  const [activePreviewIdx, setActivePreviewIdx] = useState(0);
 
   // Marka sistemi
   const [brands, setBrands] = useState(() => {
@@ -111,38 +112,56 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   }, [user, isAdmin]);
 
-  /* ── Ürün görselleri (çoklu) ── */
+  /* ── Ürün görselleri (çoklu) — her biri için ayrı renk tespiti ── */
   const handleImageFiles = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    const results = await Promise.all(files.map(readFileAsDataURL));
 
-    // İlk görselden renk tespiti
-    const colors = await extractDominantColors(results[0]);
-    setDetectedColors(colors);
+    const newEntries = await Promise.all(
+      files.map(async (file) => {
+        const url    = await readFileAsDataURL(file);
+        const colors = await extractDominantColors(url);
+        return { url, colors };
+      })
+    );
 
-    setImagePreviews((prev) => [...prev, ...results.map((url) => ({ url }))]);
+    setImagePreviews((prev) => {
+      const updated = [...prev, ...newEntries];
+      setActivePreviewIdx(prev.length); // yeni yüklenen ilk görsele odaklan
+      return updated;
+    });
     setForm((prev) => ({
       ...prev,
-      image: prev.image || results[0],
-      images: [...prev.images, ...results],
-      colors: prev.colors.length ? prev.colors : [], // renkleri kullanıcı onaylayacak
+      image:     prev.image || newEntries[0].url,
+      imageData: [...prev.imageData, ...newEntries],
     }));
-    // input'u sıfırla (aynı dosyayı tekrar seçmeye izin ver)
     if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   const removeImage = (idx) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
-    setForm((prev) => {
-      const imgs = prev.images.filter((_, i) => i !== idx);
-      return { ...prev, images: imgs, image: imgs[0] || "" };
+    setImagePreviews((prev) => {
+      const updated = prev.filter((_, i) => i !== idx);
+      setActivePreviewIdx(Math.min(activePreviewIdx, updated.length - 1));
+      return updated;
     });
-    if (idx === 0) setDetectedColors([]);
+    setForm((prev) => {
+      const imageData = prev.imageData.filter((_, i) => i !== idx);
+      return { ...prev, imageData, image: imageData[0]?.url || "" };
+    });
   };
 
   /* ── Renk toggle ── */
-  const toggleColor = (hex) => {
+  const toggleColor = (hex, isManual = false) => {
+    if (isManual && imagePreviews.length > 0) {
+      // Manuel seçimde: o görselin otomatik renklerini temizle
+      setImagePreviews((prev) =>
+        prev.map((p, i) => i === activePreviewIdx ? { ...p, colors: [] } : p)
+      );
+      setForm((prev) => ({
+        ...prev,
+        imageData: prev.imageData.map((d, i) => i === activePreviewIdx ? { ...d, colors: [] } : d),
+      }));
+    }
     setForm((prev) => ({
       ...prev,
       colors: prev.colors.includes(hex)
@@ -188,7 +207,7 @@ export default function AdminPage() {
     setShowNewBrand(false);
     setForm(EMPTY_FORM);
     setImagePreviews([]);
-    setDetectedColors([]);
+    setActivePreviewIdx(0);
     setNewBrand(EMPTY_NEW_BRAND);
     setFormError("");
   };
@@ -332,10 +351,12 @@ export default function AdminPage() {
                   {imagePreviews.length > 0 && (
                     <div style={styles.imgGrid}>
                       {imagePreviews.map((p, idx) => (
-                        <div key={idx} style={styles.imgThumbWrap}>
+                        <div key={idx} style={{ ...styles.imgThumbWrap, ...(idx === activePreviewIdx ? styles.imgThumbActive : {}) }}
+                          onClick={() => setActivePreviewIdx(idx)}>
                           <img src={p.url} alt={`görsel-${idx}`} style={styles.imgThumb} />
                           {idx === 0 && <span style={styles.imgMainBadge}>Ana</span>}
-                          <button type="button" style={styles.imgRemoveBtn} onClick={() => removeImage(idx)}>✕</button>
+                          <button type="button" style={styles.imgRemoveBtn}
+                            onClick={(e) => { e.stopPropagation(); removeImage(idx); }}>✕</button>
                         </div>
                       ))}
                       {/* + ekle butonu */}
@@ -364,12 +385,14 @@ export default function AdminPage() {
                     Renkler <span style={{ color: "#8AADA4", fontWeight: 400 }}>(birden fazla seçilebilir)</span>
                   </label>
 
-                  {/* Otomatik tespit edilenler */}
-                  {detectedColors.length > 0 && (
+                  {/* Aktif görselin otomatik tespit edilen renkleri */}
+                  {imagePreviews[activePreviewIdx]?.colors?.length > 0 && (
                     <div style={styles.detectedBox}>
-                      <p style={styles.detectedTitle}>🎨 Görselden tespit edilen renkler — eklemek için tıkla:</p>
+                      <p style={styles.detectedTitle}>
+                        🎨 Görsel {activePreviewIdx + 1}'den tespit edilen renkler — eklemek için tıkla:
+                      </p>
                       <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-                        {detectedColors.map((hex) => {
+                        {imagePreviews[activePreviewIdx].colors.map((hex) => {
                           const selected = form.colors.includes(hex);
                           return (
                             <button key={hex} type="button" title={hex}
@@ -389,7 +412,7 @@ export default function AdminPage() {
                       return (
                         <button key={c.hex} type="button" title={c.label}
                           style={{ ...styles.colorSwatch, background: c.hex, ...(selected ? styles.colorSwatchSelected : {}) }}
-                          onClick={() => toggleColor(c.hex)}>
+                          onClick={() => toggleColor(c.hex, true)}>
                           {selected && <span style={styles.colorCheck}>✓</span>}
                         </button>
                       );
@@ -543,7 +566,8 @@ const styles = {
   imageUploadPlaceholder: { display: "flex", flexDirection: "column", alignItems: "center", padding: "1.5rem" },
   imagePreview: { width: "100%", maxHeight: "180px", objectFit: "contain", padding: ".5rem" },
   imgGrid: { display: "flex", gap: ".75rem", flexWrap: "wrap", marginBottom: ".5rem" },
-  imgThumbWrap: { position: "relative", width: "90px", height: "90px" },
+  imgThumbWrap: { position: "relative", width: "90px", height: "90px", cursor: "pointer" },
+  imgThumbActive: { outline: "3px solid #2C7A5E", borderRadius: "8px" },
   imgThumb: { width: "90px", height: "90px", objectFit: "contain", borderRadius: "8px", background: "#F7F9F8", border: "1.5px solid #D9E4E0", padding: "4px" },
   imgMainBadge: { position: "absolute", top: "4px", left: "4px", background: "#2C7A5E", color: "#fff", fontSize: ".6rem", fontWeight: 700, padding: "1px 5px", borderRadius: "4px" },
   imgRemoveBtn: { position: "absolute", top: "-6px", right: "-6px", width: "20px", height: "20px", borderRadius: "50%", background: "#e05252", color: "#fff", border: "none", cursor: "pointer", fontSize: ".7rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },

@@ -29,7 +29,7 @@ export default function Footer() {
           </div>
         </div>
         <div style={styles.bottom}>
-          <p>© 2024 TechStore. Tüm hakları saklıdır.</p>
+          <p>© 2026 TechStore. Tüm hakları saklıdır.</p>
           <div style={{ display: "flex", gap: "1rem" }}>
             <span>💳 Güvenli Ödeme</span>
             <span>🚚 Hızlı Kargo</span>

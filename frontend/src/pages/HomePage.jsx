@@ -30,10 +30,6 @@ export default function HomePage() {
               <Link to="/products" className="btn btn-lg" style={{ background: "#fff", color: "#2C7A5E" }}>
                 Alışverişe Başla
               </Link>
-              <Link to="/products?category=Telefon" className="btn btn-lg btn-outline"
-                style={{ borderColor: "rgba(255,255,255,.5)", color: "#fff" }}>
-                Telefonlar
-              </Link>
             </div>
           </div>
 
