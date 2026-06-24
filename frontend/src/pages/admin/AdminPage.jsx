@@ -27,7 +27,7 @@ const DEFAULT_BRANDS = [
   { name: "ASUS",    logo: "" },
 ];
 
-const EMPTY_FORM = { name: "", category: "", brand: "", stock: "", description: "", image: "", colors: [] };
+const EMPTY_FORM = { name: "", category: "", brand: "", stock: "", description: "", image: "", images: [], colors: [] };
 const EMPTY_NEW_BRAND = { name: "", logo: "", logoPreview: "" };
 
 function readFileAsDataURL(file) {
@@ -35,6 +35,44 @@ function readFileAsDataURL(file) {
     const r = new FileReader();
     r.onload = (e) => resolve(e.target.result);
     r.readAsDataURL(file);
+  });
+}
+
+/* Canvas ile görselden baskın renkleri çıkar */
+function extractDominantColors(dataURL, count = 5) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const size   = 64; // küçük canvas — hız için
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, size, size);
+      const { data } = ctx.getImageData(0, 0, size, size);
+
+      // Renkleri 32'lik bantlara grupla (renk dithering azalt)
+      const buckets = {};
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (a < 128) continue; // şeffaf pikselleri atla
+        // çok açık (beyaz) veya çok koyu (siyah) arka planları atla
+        const brightness = (r + g + b) / 3;
+        if (brightness > 240 || brightness < 15) continue;
+        const key = `${Math.round(r / 32) * 32},${Math.round(g / 32) * 32},${Math.round(b / 32) * 32}`;
+        buckets[key] = (buckets[key] || 0) + 1;
+      }
+
+      const sorted = Object.entries(buckets)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, count)
+        .map(([key]) => {
+          const [r, g, b] = key.split(",").map(Number);
+          return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+        });
+
+      resolve(sorted);
+    };
+    img.src = dataURL;
   });
 }
 
@@ -51,7 +89,8 @@ export default function AdminPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [formError, setFormError]   = useState("");
-  const [imagePreview, setImagePreview] = useState("");
+  const [imagePreviews, setImagePreviews] = useState([]); // [{ url, dominant }]
+  const [detectedColors, setDetectedColors] = useState([]);
 
   // Marka sistemi
   const [brands, setBrands] = useState(() => {
@@ -72,13 +111,34 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   }, [user, isAdmin]);
 
-  /* ── Ürün görseli ── */
-  const handleImageFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const result = await readFileAsDataURL(file);
-    setImagePreview(result);
-    setForm((prev) => ({ ...prev, image: result }));
+  /* ── Ürün görselleri (çoklu) ── */
+  const handleImageFiles = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const results = await Promise.all(files.map(readFileAsDataURL));
+
+    // İlk görselden renk tespiti
+    const colors = await extractDominantColors(results[0]);
+    setDetectedColors(colors);
+
+    setImagePreviews((prev) => [...prev, ...results.map((url) => ({ url }))]);
+    setForm((prev) => ({
+      ...prev,
+      image: prev.image || results[0],
+      images: [...prev.images, ...results],
+      colors: prev.colors.length ? prev.colors : [], // renkleri kullanıcı onaylayacak
+    }));
+    // input'u sıfırla (aynı dosyayı tekrar seçmeye izin ver)
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const removeImage = (idx) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+    setForm((prev) => {
+      const imgs = prev.images.filter((_, i) => i !== idx);
+      return { ...prev, images: imgs, image: imgs[0] || "" };
+    });
+    if (idx === 0) setDetectedColors([]);
   };
 
   /* ── Renk toggle ── */
@@ -117,9 +177,7 @@ export default function AdminPage() {
     try {
       const { data } = await api.post("/products", { ...form, price: 0, brandLogo });
       setProducts((prev) => [...prev, data]);
-      setShowForm(false);
-      setForm(EMPTY_FORM);
-      setImagePreview("");
+      resetForm();
     } catch (err) {
       setFormError(err.response?.data?.message || "Ürün eklenemedi");
     }
@@ -129,7 +187,8 @@ export default function AdminPage() {
     setShowForm(false);
     setShowNewBrand(false);
     setForm(EMPTY_FORM);
-    setImagePreview("");
+    setImagePreviews([]);
+    setDetectedColors([]);
     setNewBrand(EMPTY_NEW_BRAND);
     setFormError("");
   };
@@ -262,36 +321,68 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                {/* Ürün Görseli */}
+                {/* Ürün Görselleri — çoklu */}
                 <div className="form-group" style={{ gridColumn: "1/-1" }}>
-                  <label className="form-label">Ürün Görseli</label>
-                  <label style={styles.imageUploadLabel} htmlFor="productImageInput">
-                    {imagePreview
-                      ? <img src={imagePreview} alt="önizleme" style={styles.imagePreview} />
-                      : (
-                        <div style={styles.imageUploadPlaceholder}>
-                          <span style={{ fontSize: "2rem" }}>📷</span>
-                          <span style={{ fontSize: ".875rem", color: "#5E8A80", marginTop: ".5rem" }}>Dosyadan görsel seç</span>
-                          <span style={{ fontSize: ".75rem", color: "#8AADA4" }}>PNG, JPG, WEBP</span>
-                        </div>
-                      )
-                    }
+                  <label className="form-label">
+                    Ürün Görselleri
+                    <span style={{ color: "#8AADA4", fontWeight: 400 }}> (birden fazla eklenebilir)</span>
                   </label>
-                  <input id="productImageInput" type="file" accept="image/*"
-                    ref={imageInputRef} style={{ display: "none" }} onChange={handleImageFile} />
-                  {imagePreview && (
-                    <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: ".5rem" }}
-                      onClick={() => { setImagePreview(""); setForm((p) => ({ ...p, image: "" })); if (imageInputRef.current) imageInputRef.current.value = ""; }}>
-                      ✕ Görseli Kaldır
-                    </button>
+
+                  {/* Önizleme grid */}
+                  {imagePreviews.length > 0 && (
+                    <div style={styles.imgGrid}>
+                      {imagePreviews.map((p, idx) => (
+                        <div key={idx} style={styles.imgThumbWrap}>
+                          <img src={p.url} alt={`görsel-${idx}`} style={styles.imgThumb} />
+                          {idx === 0 && <span style={styles.imgMainBadge}>Ana</span>}
+                          <button type="button" style={styles.imgRemoveBtn} onClick={() => removeImage(idx)}>✕</button>
+                        </div>
+                      ))}
+                      {/* + ekle butonu */}
+                      <label style={styles.imgAddBtn} htmlFor="productImageInput" title="Görsel ekle">
+                        <span style={{ fontSize: "1.5rem", color: "#3EA882" }}>＋</span>
+                      </label>
+                    </div>
                   )}
+
+                  {imagePreviews.length === 0 && (
+                    <label style={styles.imageUploadLabel} htmlFor="productImageInput">
+                      <div style={styles.imageUploadPlaceholder}>
+                        <span style={{ fontSize: "2rem" }}>📷</span>
+                        <span style={{ fontSize: ".875rem", color: "#5E8A80", marginTop: ".5rem" }}>Dosyadan görsel seç</span>
+                        <span style={{ fontSize: ".75rem", color: "#8AADA4" }}>PNG, JPG, WEBP — çoklu seçim desteklenir</span>
+                      </div>
+                    </label>
+                  )}
+                  <input id="productImageInput" type="file" accept="image/*" multiple
+                    ref={imageInputRef} style={{ display: "none" }} onChange={handleImageFiles} />
                 </div>
 
-                {/* Renkler */}
+                {/* Renkler — tespit + manuel */}
                 <div className="form-group" style={{ gridColumn: "1/-1" }}>
                   <label className="form-label">
                     Renkler <span style={{ color: "#8AADA4", fontWeight: 400 }}>(birden fazla seçilebilir)</span>
                   </label>
+
+                  {/* Otomatik tespit edilenler */}
+                  {detectedColors.length > 0 && (
+                    <div style={styles.detectedBox}>
+                      <p style={styles.detectedTitle}>🎨 Görselden tespit edilen renkler — eklemek için tıkla:</p>
+                      <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
+                        {detectedColors.map((hex) => {
+                          const selected = form.colors.includes(hex);
+                          return (
+                            <button key={hex} type="button" title={hex}
+                              style={{ ...styles.detectedSwatch, background: hex, ...(selected ? styles.detectedSwatchSelected : {}) }}
+                              onClick={() => toggleColor(hex)}>
+                              {selected && <span style={styles.colorCheck}>✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={styles.colorGrid}>
                     {COLOR_OPTIONS.map((c) => {
                       const selected = form.colors.includes(c.hex);
@@ -311,7 +402,7 @@ export default function AdminPage() {
                         return (
                           <span key={hex} style={{ ...styles.colorTag, borderColor: hex }}>
                             <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: hex, display: "inline-block" }} />
-                            {found?.label}
+                            {found?.label || hex}
                           </span>
                         );
                       })}
@@ -451,6 +542,16 @@ const styles = {
   },
   imageUploadPlaceholder: { display: "flex", flexDirection: "column", alignItems: "center", padding: "1.5rem" },
   imagePreview: { width: "100%", maxHeight: "180px", objectFit: "contain", padding: ".5rem" },
+  imgGrid: { display: "flex", gap: ".75rem", flexWrap: "wrap", marginBottom: ".5rem" },
+  imgThumbWrap: { position: "relative", width: "90px", height: "90px" },
+  imgThumb: { width: "90px", height: "90px", objectFit: "contain", borderRadius: "8px", background: "#F7F9F8", border: "1.5px solid #D9E4E0", padding: "4px" },
+  imgMainBadge: { position: "absolute", top: "4px", left: "4px", background: "#2C7A5E", color: "#fff", fontSize: ".6rem", fontWeight: 700, padding: "1px 5px", borderRadius: "4px" },
+  imgRemoveBtn: { position: "absolute", top: "-6px", right: "-6px", width: "20px", height: "20px", borderRadius: "50%", background: "#e05252", color: "#fff", border: "none", cursor: "pointer", fontSize: ".7rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },
+  imgAddBtn: { width: "90px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", border: "2px dashed #D9E4E0", borderRadius: "8px", cursor: "pointer", background: "#F7F9F8", transition: "border-color .2s" },
+  detectedBox: { background: "#E8F5F0", borderRadius: "8px", padding: ".875rem", marginBottom: ".75rem", border: "1.5px solid #B8CFC8" },
+  detectedTitle: { fontSize: ".8rem", fontWeight: 600, color: "#2C4F48", marginBottom: ".625rem" },
+  detectedSwatch: { width: "40px", height: "40px", borderRadius: "8px", border: "2px solid transparent", cursor: "pointer", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s, box-shadow .15s", boxShadow: "0 1px 4px rgba(0,0,0,.2)" },
+  detectedSwatchSelected: { border: "2px solid #2C7A5E", transform: "scale(1.1)", boxShadow: "0 0 0 3px rgba(44,122,94,.25)" },
 
   /* Renkler */
   colorGrid: { display: "flex", flexWrap: "wrap", gap: ".625rem", marginTop: ".375rem" },
