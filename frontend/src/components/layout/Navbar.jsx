@@ -1,23 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 
-const CATEGORIES = [
-  { name: "Telefon",      icon: "📱" },
-  { name: "Laptop",       icon: "💻" },
-  { name: "Kulaklık",     icon: "🎧" },
-  { name: "Tablet",       icon: "📟" },
-  { name: "Televizyon",   icon: "📺" },
-  { name: "Oyun Konsolu", icon: "🎮" },
-];
+const CATEGORY_ICONS = {
+  "Telefon":      "📱",
+  "Laptop":       "💻",
+  "Kulaklık":     "🎧",
+  "Tablet":       "📟",
+  "Televizyon":   "📺",
+  "Oyun Konsolu": "🎮",
+};
+const DEFAULT_CATEGORIES = ["Telefon", "Laptop", "Kulaklık", "Tablet", "Televizyon", "Oyun Konsolu"];
+
+function loadCategories() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("techstore_categories"));
+    return Array.isArray(stored) && stored.length ? stored : DEFAULT_CATEGORIES;
+  } catch { return DEFAULT_CATEGORIES; }
+}
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
+  const [categories, setCategories] = useState(loadCategories);
+
+  useEffect(() => {
+    const handler = () => setCategories(loadCategories());
+    window.addEventListener("storage", handler);
+    window.addEventListener("categories-updated", handler);
+    return () => {
+      window.removeEventListener("storage", handler);
+      window.removeEventListener("categories-updated", handler);
+    };
+  }, []);
   const [searchParams] = useSearchParams();
   const activeCategory = searchParams.get("category") || "";
   const [search, setSearch]           = useState("");
@@ -157,19 +176,20 @@ export default function Navbar() {
 
       <div style={styles.categories}>
         <div className="container" style={styles.categoriesInner}>
-          {CATEGORIES.map((cat) => {
-            const isActive  = activeCategory === cat.name;
-            const isHovered = hoveredCat === cat.name;
+          {categories.map((catName) => {
+            const isActive  = activeCategory === catName;
+            const isHovered = hoveredCat === catName;
+            const icon = CATEGORY_ICONS[catName] || "🛍️";
             return (
               <Link
-                key={cat.name}
-                to={`/products?category=${cat.name}`}
+                key={catName}
+                to={`/products?category=${catName}`}
                 style={{
                   ...styles.catLink,
                   color: isActive ? "#2C7A5E" : isHovered ? "#3EA882" : "#5E8A80",
                   fontWeight: isActive ? 700 : 500,
                 }}
-                onMouseEnter={() => setHoveredCat(cat.name)}
+                onMouseEnter={() => setHoveredCat(catName)}
                 onMouseLeave={() => setHoveredCat(null)}
               >
                 <span style={{
@@ -177,9 +197,9 @@ export default function Navbar() {
                   transform: isHovered ? "scale(1.3) translateY(-2px)" : "scale(1)",
                   opacity: isHovered || isActive ? 1 : 0.6,
                 }}>
-                  {cat.icon}
+                  {icon}
                 </span>
-                <span>{cat.name}</span>
+                <span>{catName}</span>
                 <span style={{
                   ...styles.catUnderline,
                   width: isActive || isHovered ? "100%" : "0%",

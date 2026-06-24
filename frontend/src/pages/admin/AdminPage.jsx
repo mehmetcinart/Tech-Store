@@ -133,7 +133,10 @@ export default function AdminPage() {
   const [showNewBrand, setShowNewBrand] = useState(false);
   const [newBrand, setNewBrand]         = useState(EMPTY_NEW_BRAND);
 
-  useEffect(() => { localStorage.setItem("techstore_categories", JSON.stringify(categories)); }, [categories]);
+  useEffect(() => {
+    localStorage.setItem("techstore_categories", JSON.stringify(categories));
+    window.dispatchEvent(new CustomEvent("categories-updated"));
+  }, [categories]);
   useEffect(() => { localStorage.setItem("techstore_brands",     JSON.stringify(brands));     }, [brands]);
 
   useEffect(() => {
